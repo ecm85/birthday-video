@@ -31,7 +31,6 @@ jobs:
       - name: Save TF Plan
         uses: actions/upload-artifact@v3
         with:
-          name: tf-plan
           path: |
             terraform/.terraform
             terraform/.terraform.plan
