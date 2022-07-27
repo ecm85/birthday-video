@@ -5,12 +5,44 @@ on:
     branches: [ main ]
 
 jobs:
-  terraform-plan:
+  build:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Get Source
         uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+            node-version: 16.14.2
+
+      - name: Build
+        run: |
+          cd $GITHUB_WORKSPACE/client
+          npm install
+          npm run build
+          cd ..
+
+      - name: Save build
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: terraform/build
+
+  terraform-plan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Get Source
+        uses: actions/checkout@v2
+
+      - name: Download TF Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: terraform/build
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
