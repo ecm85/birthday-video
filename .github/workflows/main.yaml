@@ -36,3 +36,30 @@ jobs:
             terraform/.terraform
             terraform/.terraform.plan
             terraform/.terraform.lock.hcl
+
+terraform-apply:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Get Source
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.2.5
+
+      - name: Download TF Plan
+        uses: actions/download-artifact@v3
+        path: terraform
+
+      - name: Terraform Plan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+          AWS_DEFAULT_REGION: us-east-2
+          TF_INPUT: 0
+          TF_IN_AUTOMATION: 1
+        run: |
+          cd $GITHUB_WORKSPACE/terraform
+          terraform apply .terraform.plan
