@@ -38,7 +38,7 @@ jobs:
       - name: Get Source
         uses: actions/checkout@v2
 
-      - name: Download TF Plan
+      - name: Download build artifacts
         uses: actions/download-artifact@v3
         with:
           name: build
@@ -78,6 +78,12 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Get Source
         uses: actions/checkout@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: terraform/build
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
