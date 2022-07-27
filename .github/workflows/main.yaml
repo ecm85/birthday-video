@@ -28,14 +28,15 @@ jobs:
           cd $GITHUB_WORKSPACE/terraform
           terraform init
           terraform plan -out=.terraform.plan
+
+      - name: Tar files
+        run: tar cvf terraform.tar terraform/.terraform terraform/.terraform.plan terraform/.terraform.lock.hcl
+
       - name: Save TF Plan
         uses: actions/upload-artifact@v3
         with:
           name: terraform
-          path: |
-            terraform/.terraform
-            terraform/.terraform.plan
-            terraform/.terraform.lock.hcl
+          path: terraform.tar
 
   terraform-apply:
     needs: terraform-plan
@@ -53,8 +54,13 @@ jobs:
 
       - name: Download TF Plan
         uses: actions/download-artifact@v3
+        with:
+          name: terraform
 
-      - name: Terraform Plan
+      - name: Extract TF Plan
+        run: tar -xf terraform.tar
+
+      - name: Terraform Apply
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
