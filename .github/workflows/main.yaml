@@ -37,7 +37,7 @@ jobs:
             terraform/.terraform.plan
             terraform/.terraform.lock.hcl
 
-terraform-apply:
+  terraform-apply:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
