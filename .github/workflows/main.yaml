@@ -51,7 +51,8 @@ jobs:
 
       - name: Download TF Plan
         uses: actions/download-artifact@v3
-        path: terraform
+        with:
+          path: terraform
 
       - name: Terraform Plan
         env:
