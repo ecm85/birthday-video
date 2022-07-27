@@ -75,6 +75,7 @@ locals {
   }]
   bucket_files = { for item in local.bucket_pass1 : item.local_path => {
     full_path    = item.full_path
+    local_path   = item.local_path
     content_type = lookup(local.file_extension_to_content_type, item.file_extension, local.default_content_type)
   } }
 }
@@ -86,7 +87,7 @@ resource "aws_s3_object" "files" {
   key    = each.key
   source = each.value.full_path
 
-  etag = filemd5(each.value.full_path)
+  etag = filemd5(each.value.local_path)
 
   content_type = each.value.content_type
 }
@@ -181,6 +182,6 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 
   viewer_certificate {
     acm_certificate_arn = "arn:aws:acm:us-east-1:854713338508:certificate/69701efd-b6ed-4912-88c6-e6ec338a6c8b"
-    ssl_support_method = "sni-only"
+    ssl_support_method  = "sni-only"
   }
 }
