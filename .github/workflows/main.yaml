@@ -24,7 +24,7 @@ jobs:
           AWS_DEFAULT_REGION: us-east-2
           TF_INPUT: 0
           TF_IN_AUTOMATION: 1
-        run:
+        run: |
           cd $GITHUB_WORKSPACE/terraform
           terraform init
           terraform plan -out=.terraform.plan
@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: tf-plan
-          path:
+          path: |
             terraform/.terraform
             terraform/.terraform.plan
             terraform/.terraform.lock.hcl
