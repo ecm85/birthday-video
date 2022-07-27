@@ -1,5 +1,9 @@
 name: CI-CD
 
+on:
+  push:
+    branches: [ main ]
+
 jobs:
   terraform-plan:
     runs-on: ubuntu-latest
@@ -35,6 +39,7 @@ jobs:
 
   terraform-apply:
     needs: terraform-plan
+    environment: terraform-apply
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
