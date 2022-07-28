@@ -184,3 +184,14 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     ssl_support_method = "sni-only"
   }
 }
+
+resource "aws_s3_bucket" "videos" {
+  bucket = "birthday-video-uploads"
+}
+
+resource "aws_s3_bucket_public_access_block" "videos" {
+  bucket = aws_s3_bucket.videos.id
+
+  block_public_acls   = false
+  block_public_policy = false
+}

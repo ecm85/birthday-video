@@ -3,6 +3,10 @@ import styles from './VideoUpload.css';
 import cx from 'classnames';
 import Timer from './Timer';
 
+// TODO:
+// add 'done recording' video button?
+// center countdown text vertically better?
+
 enum IWorkflowState {
 	Initial,
 	CameraStarting,
@@ -19,6 +23,8 @@ export default function VideoUpload() {
 	const [state, setState] = useState(IWorkflowState.Initial);
 	const [mediaStream, setMediaStream] = useState<MediaStream>(null);
 	const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
+	const [blob, setBlob] = useState<Blob>();
+	const [acceptedRecording, setAcceptedRecording] = useState(false);
 
 	const startSpecificCameraFromStream = async (stream: MediaStream) => {
 		try {
@@ -123,6 +129,26 @@ export default function VideoUpload() {
 		// TODO: Handle cancellation?
 	}, [captureVideoRef.current, state]);
 
+	useEffect(() => {
+		if (!acceptedRecording) {
+			return;
+		}
+		// const dateFileName = `birthday_video_${new Date()
+		// 	.toJSON()
+		// 	.slice(0, 10)}`;
+		const uploadFile = async () => {
+			const s3Url = ''; // TODO: Get this URL
+			const response = await fetch(s3Url, {
+				method: 'PUT',
+				body: blob
+			});
+			if (!response?.ok) {
+				console.error(response);
+			}
+		};
+		uploadFile().catch(console.error);
+	}, [acceptedRecording]);
+
 	const handleStartCameraClicked = () => {
 		setState(IWorkflowState.CameraStarting);
 	};
@@ -133,15 +159,16 @@ export default function VideoUpload() {
 
 	const handleCountdownDone = () => {
 		setState(IWorkflowState.Recording);
-		const mediaRecorder = new MediaRecorder(mediaStream);
-		mediaRecorder.ondataavailable = (event: BlobEvent) => {
-			const blob = event.data;
-			const blobUrl = URL.createObjectURL(blob);
-			playbackVideoRef.current.src = blobUrl;
+		const newMediaRecorder = new MediaRecorder(mediaStream);
+		newMediaRecorder.ondataavailable = (event: BlobEvent) => {
+			const newBlob = event.data;
+			const newBlobUrl = URL.createObjectURL(newBlob);
+			playbackVideoRef.current.src = newBlobUrl;
+			setBlob(newBlob);
 			setState(IWorkflowState.Recorded);
 		};
-		setMediaRecorder(mediaRecorder);
-		mediaRecorder.start();
+		setMediaRecorder(newMediaRecorder);
+		newMediaRecorder.start();
 	};
 
 	const playbackVideoClassName = cx(styles.video, {
@@ -159,6 +186,10 @@ export default function VideoUpload() {
 		mediaRecorder.stop();
 	};
 
+	const handleAcceptRecordingClicked = () => {
+		setAcceptedRecording(true);
+	};
+
 	return (
 		<div>
 			<div>
@@ -173,9 +204,14 @@ export default function VideoUpload() {
 					</button>
 				)}
 				{state === IWorkflowState.Recorded && (
-					<button onClick={handleStartRecordingClicked}>
-						Re-do Recording
-					</button>
+					<>
+						<button onClick={handleStartRecordingClicked}>
+							Re-do Recording
+						</button>
+						<button onClick={handleAcceptRecordingClicked}>
+							Accept Recording
+						</button>
+					</>
 				)}
 				{(state === IWorkflowState.CameraStarting ||
 					state === IWorkflowState.CountdownToRecording ||
@@ -196,13 +232,15 @@ export default function VideoUpload() {
 					autoPlay
 					muted
 					ref={captureVideoRef}></video>
-				{state === IWorkflowState.CountdownToRecording && (
-					<Timer
-						seconds={3}
-						onComplete={handleCountdownDone}
-						className={styles.countdownTimer}
-					/>
-				)}
+				<div className={styles.countdownWrapper}>
+					{state === IWorkflowState.CountdownToRecording && (
+						<Timer
+							seconds={5}
+							onComplete={handleCountdownDone}
+							className={styles.countdownTimer}
+						/>
+					)}
+				</div>
 			</div>
 			<div className={styles.recordingTimerWrapper}>
 				{state === IWorkflowState.Recording && (
