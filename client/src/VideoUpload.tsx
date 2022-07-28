@@ -1,16 +1,29 @@
 import React, { useRef, useState, useEffect } from 'react';
 import styles from './VideoUpload.css';
+import cx from 'classnames';
+import Timer from './Timer';
+
+enum IWorkflowState {
+	Initial,
+	CameraStarting,
+	CameraStarted,
+	CountdownToRecording,
+	Recording,
+	Recorded
+}
 
 export default function VideoUpload() {
 	const canvasRef = useRef<HTMLCanvasElement>();
-	const videoRef = useRef<HTMLVideoElement>();
-	const [isCameraStarted, setIsCameraStarted] = useState(false);
-	// const [mediaStream, setMediaStream] = useState<MediaStream>(null);
+	const captureVideoRef = useRef<HTMLVideoElement>();
+	const playbackVideoRef = useRef<HTMLVideoElement>();
+	const [state, setState] = useState(IWorkflowState.Initial);
+	const [mediaStream, setMediaStream] = useState<MediaStream>(null);
+	const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
 
 	const startSpecificCameraFromStream = async (stream: MediaStream) => {
 		try {
-			videoRef.current.srcObject = stream;
-			// setMediaStream(stream);
+			captureVideoRef.current.srcObject = stream;
+			setMediaStream(stream);
 			return true;
 		} catch (error) {
 			console.info(
@@ -23,7 +36,7 @@ export default function VideoUpload() {
 	const startSpecificCameraByEnsuringAccess = async () => {
 		try {
 			const initialCamera = await navigator.mediaDevices.getUserMedia({
-				audio: false,
+				audio: true,
 				video: { facingMode: { ideal: 'user' } }
 			});
 			return await startSpecificCameraFromStream(initialCamera);
@@ -93,28 +106,123 @@ export default function VideoUpload() {
 	};
 
 	useEffect(() => {
-		if (videoRef.current) {
+		if (
+			captureVideoRef.current &&
+			state === IWorkflowState.CameraStarting
+		) {
 			const startPreferredCamera = async () => {
 				const startedCamera = await startPreferredCameraAsync();
-				if (startedCamera) setIsCameraStarted(startedCamera);
-				else {
+				if (startedCamera) {
+					setState(IWorkflowState.CameraStarted);
+				} else {
 					// TODO: Handle failure here?
 				}
 			};
 			startPreferredCamera().catch(console.error);
 		}
 		// TODO: Handle cancellation?
-	}, []);
+	}, [captureVideoRef.current, state]);
+
+	const handleStartCameraClicked = () => {
+		setState(IWorkflowState.CameraStarting);
+	};
+
+	const handleStartRecordingClicked = () => {
+		setState(IWorkflowState.CountdownToRecording);
+	};
+
+	const handleCountdownDone = () => {
+		setState(IWorkflowState.Recording);
+		const mediaRecorder = new MediaRecorder(mediaStream);
+		mediaRecorder.ondataavailable = (event: BlobEvent) => {
+			const blob = event.data;
+			const blobUrl = URL.createObjectURL(blob);
+			playbackVideoRef.current.src = blobUrl;
+			setState(IWorkflowState.Recorded);
+		};
+		setMediaRecorder(mediaRecorder);
+		mediaRecorder.start();
+	};
+
+	const playbackVideoClassName = cx(styles.video, {
+		[styles.hiddenVideo]: state !== IWorkflowState.Recorded
+	});
+
+	const captureVideoClassName = cx(styles.video, {
+		[styles.hiddenVideo]:
+			state !== IWorkflowState.Recording &&
+			state !== IWorkflowState.CameraStarted &&
+			state !== IWorkflowState.CountdownToRecording
+	});
+
+	const handleRecordingDone = () => {
+		mediaRecorder.stop();
+	};
 
 	return (
 		<div>
+			<div>
+				{state === IWorkflowState.Initial && (
+					<button onClick={handleStartCameraClicked}>
+						Start Camera
+					</button>
+				)}
+				{state === IWorkflowState.CameraStarted && (
+					<button onClick={handleStartRecordingClicked}>
+						Start Recording
+					</button>
+				)}
+				{state === IWorkflowState.Recorded && (
+					<button onClick={handleStartRecordingClicked}>
+						Re-do Recording
+					</button>
+				)}
+				{(state === IWorkflowState.CameraStarting ||
+					state === IWorkflowState.CountdownToRecording ||
+					state === IWorkflowState.Recording) && (
+					<button className={styles.placeholderButton}>
+						Placeholder
+					</button>
+				)}
+			</div>
 			<canvas hidden ref={canvasRef}></canvas>
-			{!isCameraStarted && <div>Waiting for camera to start...</div>}
-			<video
-				playsInline
-				className={styles.video}
-				autoPlay
-				ref={videoRef}></video>
+			{state === IWorkflowState.CameraStarting && (
+				<div>Waiting for camera to start...</div>
+			)}
+			<div className={styles.captureWrapper}>
+				<video
+					playsInline
+					className={captureVideoClassName}
+					autoPlay
+					muted
+					ref={captureVideoRef}></video>
+				{state === IWorkflowState.CountdownToRecording && (
+					<Timer
+						seconds={3}
+						onComplete={handleCountdownDone}
+						className={styles.countdownTimer}
+					/>
+				)}
+			</div>
+			<div className={styles.recordingTimerWrapper}>
+				{state === IWorkflowState.Recording && (
+					<>
+						Time Remaining:
+						<Timer
+							seconds={15}
+							onComplete={handleRecordingDone}
+							className={styles.recordingTimer}
+						/>
+					</>
+				)}
+			</div>
+			<div>
+				<video
+					playsInline
+					controls
+					className={playbackVideoClassName}
+					ref={playbackVideoRef}></video>
+			</div>
 		</div>
 	);
 }
