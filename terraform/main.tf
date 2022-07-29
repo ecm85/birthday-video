@@ -194,7 +194,7 @@ resource "aws_s3_bucket_cors_configuration" "example" {
 
   cors_rule {
     allowed_headers = ["*"]
-    allowed_methods = ["*"]
+    allowed_methods = ["PUT"]
     allowed_origins = ["*"]
     expose_headers  = ["ETag", "Access-Control-Allow-Origin"]
     max_age_seconds = 3000
