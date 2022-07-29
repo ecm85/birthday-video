@@ -142,11 +142,13 @@ export default function VideoUpload() {
 		// 	.toJSON()
 		// 	.slice(0, 10)}`;
 		const uploadFile = async () => {
-			const s3Url = ''; // TODO: Get this URL
+			const s3Url = 'http://s3.amazonaws.com/[birthday-video-uploads]/';
+			console.log('about to submit');
 			const response = await fetch(s3Url, {
 				method: 'PUT',
 				body: blob
 			});
+			console.log(response);
 			if (!response?.ok) {
 				console.error(response);
 			}

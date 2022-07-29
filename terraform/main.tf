@@ -181,12 +181,24 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 
   viewer_certificate {
     acm_certificate_arn = "arn:aws:acm:us-east-1:854713338508:certificate/69701efd-b6ed-4912-88c6-e6ec338a6c8b"
-    ssl_support_method = "sni-only"
+    ssl_support_method  = "sni-only"
   }
 }
 
 resource "aws_s3_bucket" "videos" {
   bucket = "birthday-video-uploads"
+}
+
+resource "aws_s3_bucket_cors_configuration" "example" {
+  bucket = aws_s3_bucket.videos.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["*"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag", "Access-Control-Allow-Origin"]
+    max_age_seconds = 3000
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "videos" {

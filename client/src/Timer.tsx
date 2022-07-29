@@ -11,7 +11,6 @@ export default function Timer({ seconds, onComplete, className }: ITimerProps) {
 	useEffect(() => {
 		const interval = setTimeout(() => {
 			const newValue = value - 1;
-			console.log(newValue);
 			setValue(newValue);
 			if (newValue === 0) {
 				onComplete();
