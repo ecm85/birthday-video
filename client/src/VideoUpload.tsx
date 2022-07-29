@@ -138,15 +138,20 @@ export default function VideoUpload() {
 		if (!acceptedRecording) {
 			return;
 		}
-		// const dateFileName = `birthday_video_${new Date()
-		// 	.toJSON()
-		// 	.slice(0, 10)}`;
+		const dateFileName = `birthday_video_${new Date()
+			.toJSON()
+			.slice(0, 10)}`;
 		const uploadFile = async () => {
-			const s3Url = 'http://s3.amazonaws.com/[birthday-video-uploads]/';
+			const s3Url = 'https://birthday-video-uploads.s3.amazonaws.com';
+			console.log(dateFileName);
+			const file = new File([blob], dateFileName, {
+				type: 'video/webm',
+				lastModified: Date.now()
+			});
 			console.log('about to submit');
 			const response = await fetch(s3Url, {
-				method: 'PUT',
-				body: blob
+				method: 'POST',
+				body: file
 			});
 			console.log(response);
 			if (!response?.ok) {
