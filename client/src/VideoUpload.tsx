@@ -5,9 +5,9 @@ import Timer from './Timer';
 
 // TODO:
 // add 'done recording' video button?
-// center countdown text vertically better
 // switch to modal?
 // presigned s3 url?
+// hide video elements
 
 enum IWorkflowState {
 	Initial,
@@ -267,9 +267,8 @@ export default function VideoUpload() {
 					</>
 				)}
 			</div>
-			<div>
-				{(state === IWorkflowState.Recorded ||
-					state === IWorkflowState.Uploading) && <div>Preview:</div>}
+			<div className={styles.playbackWrapper}>
+				{state === IWorkflowState.Recorded && <div>Preview:</div>}
 				<video
 					playsInline
 					controls
