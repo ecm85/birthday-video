@@ -195,3 +195,21 @@ resource "aws_s3_bucket_public_access_block" "videos" {
   block_public_acls   = false
   block_public_policy = false
 }
+
+data "aws_iam_policy_document" "videos" {
+  statement {
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    resources = ["${aws_s3_bucket.website.arn}/*"]
+  }
+}
+
+resource "aws_s3_bucket_policy" "videos" {
+  bucket = aws_s3_bucket.videos.id
+  policy = data.aws_iam_policy_document.videos.json
+}
