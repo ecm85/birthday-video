@@ -6,9 +6,6 @@ import Timer from './Timer';
 // TODO:
 // add 'done recording' video button?
 // center countdown text vertically better
-// make bucket truly public
-// upload to bucket (need to get url)
-// make sure files uploaded are playable somehow
 // switch to modal?
 // presigned s3 url?
 
@@ -18,7 +15,10 @@ enum IWorkflowState {
 	CameraStarted,
 	CountdownToRecording,
 	Recording,
-	Recorded
+	Recorded,
+	Uploading,
+	Done,
+	Error
 }
 
 export default function VideoUpload() {
@@ -29,7 +29,6 @@ export default function VideoUpload() {
 	const [mediaStream, setMediaStream] = useState<MediaStream>(null);
 	const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
 	const [blob, setBlob] = useState<Blob>();
-	const [acceptedRecording, setAcceptedRecording] = useState(false);
 
 	const startSpecificCameraFromStream = async (stream: MediaStream) => {
 		try {
@@ -126,43 +125,33 @@ export default function VideoUpload() {
 				if (startedCamera) {
 					setState(IWorkflowState.CameraStarted);
 				} else {
-					// TODO: Handle failure here?
+					setState(IWorkflowState.Error);
 				}
 			};
-			startPreferredCamera().catch(console.error);
+			startPreferredCamera().catch(() => setState(IWorkflowState.Error));
 		}
 		// TODO: Handle cancellation?
 	}, [captureVideoRef.current, state]);
 
 	useEffect(() => {
-		if (!acceptedRecording) {
+		if (state !== IWorkflowState.Uploading) {
 			return;
 		}
-		const dateFileName = `birthday_video_${new Date()
-			.toJSON()
-			.slice(0, 10)}`;
+		const dateFileName = `birthday_video_${new Date().toJSON()}`;
 		const uploadFile = async () => {
 			const s3Url = `https://birthday-video-uploads.s3.amazonaws.com/${dateFileName}`;
-			// console.log(dateFileName);
-			// const file = new File([blob], dateFileName, {
-			// 	type: 'video/webm',
-			// 	lastModified: Date.now()
-			// });
-			console.log('about to submit');
 			const response = await fetch(s3Url, {
 				method: 'PUT',
-				// headers: {
-				// 	['Content-Type']: 'multipart/form-data'
-				// },
 				body: blob
 			});
-			console.log(response);
 			if (!response?.ok) {
-				console.error(response);
+				setState(IWorkflowState.Error);
+			} else {
+				setState(IWorkflowState.Done);
 			}
 		};
-		uploadFile().catch(console.error);
-	}, [acceptedRecording]);
+		uploadFile().catch(() => setState(IWorkflowState.Error));
+	}, [state]);
 
 	const handleStartCameraClicked = () => {
 		setState(IWorkflowState.CameraStarting);
@@ -202,7 +191,7 @@ export default function VideoUpload() {
 	};
 
 	const handleAcceptRecordingClicked = () => {
-		setAcceptedRecording(true);
+		setState(IWorkflowState.Uploading);
 	};
 
 	return (
@@ -218,13 +207,22 @@ export default function VideoUpload() {
 						Start Recording
 					</button>
 				)}
-				{state === IWorkflowState.Recorded && (
+				{(state === IWorkflowState.Recorded ||
+					state === IWorkflowState.Uploading) && (
 					<>
-						<button onClick={handleStartRecordingClicked}>
+						<button
+							onClick={handleStartRecordingClicked}
+							disabled={state === IWorkflowState.Uploading}>
 							Re-do Recording
 						</button>
-						<button onClick={handleAcceptRecordingClicked}>
-							Accept Recording
+						<button
+							onClick={handleAcceptRecordingClicked}
+							disabled={state === IWorkflowState.Uploading}>
+							{state === IWorkflowState.Recorded ? (
+								<>Accept Recording</>
+							) : (
+								<>Uploading...</>
+							)}
 						</button>
 					</>
 				)}
@@ -270,12 +268,20 @@ export default function VideoUpload() {
 				)}
 			</div>
 			<div>
+				{(state === IWorkflowState.Recorded ||
+					state === IWorkflowState.Uploading) && <div>Preview:</div>}
 				<video
 					playsInline
 					controls
 					className={playbackVideoClassName}
 					ref={playbackVideoRef}></video>
 			</div>
+			{state === IWorkflowState.Done && (
+				<div>Thanks! Your video has been uploaded.</div>
+			)}
+			{state === IWorkflowState.Error && (
+				<div>Uh Oh! Something went wrong.</div>
+			)}
 		</div>
 	);
 }
