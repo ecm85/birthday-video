@@ -216,7 +216,7 @@ data "aws_iam_policy_document" "videos" {
     }
 
     effect    = "Allow"
-    actions   = ["s3:GetObject", "s3:PutObject"]
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:GetObjectAcl"]
     resources = ["${aws_s3_bucket.videos.arn}/*"]
   }
 }
