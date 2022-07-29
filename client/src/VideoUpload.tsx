@@ -142,16 +142,19 @@ export default function VideoUpload() {
 			.toJSON()
 			.slice(0, 10)}`;
 		const uploadFile = async () => {
-			const s3Url = 'https://birthday-video-uploads.s3.amazonaws.com';
-			console.log(dateFileName);
-			const file = new File([blob], dateFileName, {
-				type: 'video/webm',
-				lastModified: Date.now()
-			});
+			const s3Url = `https://birthday-video-uploads.s3.amazonaws.com/${dateFileName}`;
+			// console.log(dateFileName);
+			// const file = new File([blob], dateFileName, {
+			// 	type: 'video/webm',
+			// 	lastModified: Date.now()
+			// });
 			console.log('about to submit');
 			const response = await fetch(s3Url, {
-				method: 'POST',
-				body: file
+				method: 'PUT',
+				// headers: {
+				// 	['Content-Type']: 'multipart/form-data'
+				// },
+				body: blob
 			});
 			console.log(response);
 			if (!response?.ok) {
