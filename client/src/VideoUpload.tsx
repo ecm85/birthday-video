@@ -5,7 +5,12 @@ import Timer from './Timer';
 
 // TODO:
 // add 'done recording' video button?
-// center countdown text vertically better?
+// center countdown text vertically better
+// make bucket truly public
+// upload to bucket (need to get url)
+// make sure files uploaded are playable somehow
+// switch to modal?
+// presigned s3 url?
 
 enum IWorkflowState {
 	Initial,
@@ -67,10 +72,10 @@ export default function VideoUpload() {
 			const camera2IsBack = cameraIsBack(cameraInfo2);
 
 			if (camera1IsBack && !camera2IsBack) {
-				return -1;
+				return 1;
 			}
 			if (camera2IsBack && !camera1IsBack) {
-				return 1;
+				return -1;
 			}
 
 			return 0;

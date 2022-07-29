@@ -63,13 +63,13 @@ module.exports = {
 		}),
 		new ForkTsCheckerWebpackPlugin(),
 		new HtmlWebpackPlugin({
-			title: 'Math Games',
+			title: 'Birthday Videos',
 			favicon: './src/favicon.ico',
 			meta: {
 				viewport:
 					'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
-				author: 'Jacob Buysse',
-				description: 'Math Games'
+				author: 'Ezra McNichols',
+				description: 'Birthday Videos'
 			},
 			inject: false,
 			templateContent: ({ htmlWebpackPlugin: { tags } }) => `
