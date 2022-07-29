@@ -225,3 +225,11 @@ resource "aws_s3_bucket_policy" "videos" {
   bucket = aws_s3_bucket.videos.id
   policy = data.aws_iam_policy_document.videos.json
 }
+
+resource "aws_s3_bucket_ownership_controls" "videos" {
+  bucket = aws_s3_bucket.videos.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
