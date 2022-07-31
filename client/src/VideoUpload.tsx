@@ -4,7 +4,6 @@ import cx from 'classnames';
 import Timer from './Timer';
 
 // TODO:
-// add 'done recording' video button?
 // switch to modal?
 // presigned s3 url?
 // hide video elements
@@ -29,6 +28,13 @@ export default function VideoUpload() {
 	const [mediaStream, setMediaStream] = useState<MediaStream>(null);
 	const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
 	const [blob, setBlob] = useState<Blob>();
+	const [error, setError] = useState('');
+	const [cameraLogs, setCameraLogs] = useState<string[]>([]);
+
+	const setErrorState = (error: string) => {
+		setError(error);
+		setState(IWorkflowState.Error);
+	};
 
 	const startSpecificCameraFromStream = async (stream: MediaStream) => {
 		try {
@@ -36,9 +42,10 @@ export default function VideoUpload() {
 			setMediaStream(stream);
 			return true;
 		} catch (error) {
-			console.info(
+			setCameraLogs([
+				...cameraLogs,
 				`unable to start camera: ${stream.id} - ${error.message}`
-			);
+			]);
 			return false;
 		}
 	};
@@ -51,7 +58,10 @@ export default function VideoUpload() {
 			});
 			return await startSpecificCameraFromStream(initialCamera);
 		} catch (error) {
-			console.info(`unable to get camera: ${error.message}`);
+			setCameraLogs([
+				...cameraLogs,
+				`unable to get camera: ${error.message}`
+			]);
 			return false;
 		}
 	};
@@ -89,9 +99,10 @@ export default function VideoUpload() {
 			});
 			return await startSpecificCameraFromStream(camera);
 		} catch (error) {
-			console.info(
+			setCameraLogs([
+				...cameraLogs,
 				`unable to get camera: ${cameraInfo.label} - ${error.message}`
-			);
+			]);
 			return false;
 		}
 	};
@@ -110,33 +121,15 @@ export default function VideoUpload() {
 			}
 			return false;
 		} catch (error) {
-			console.info(`unable to access camera: ${error.message}`);
+			setCameraLogs([
+				...cameraLogs,
+				`unable to access camera: ${error.message}`
+			]);
 			return false;
 		}
 	};
 
-	useEffect(() => {
-		if (
-			captureVideoRef.current &&
-			state === IWorkflowState.CameraStarting
-		) {
-			const startPreferredCamera = async () => {
-				const startedCamera = await startPreferredCameraAsync();
-				if (startedCamera) {
-					setState(IWorkflowState.CameraStarted);
-				} else {
-					setState(IWorkflowState.Error);
-				}
-			};
-			startPreferredCamera().catch(() => setState(IWorkflowState.Error));
-		}
-		// TODO: Handle cancellation?
-	}, [captureVideoRef.current, state]);
-
-	useEffect(() => {
-		if (state !== IWorkflowState.Uploading) {
-			return;
-		}
+	const uploadVideo = () => {
 		const dateFileName = `birthday_video_${new Date().toJSON()}`;
 		const uploadFile = async () => {
 			const s3Url = `https://birthday-video-uploads.s3.amazonaws.com/${dateFileName}`;
@@ -145,12 +138,52 @@ export default function VideoUpload() {
 				body: blob
 			});
 			if (!response?.ok) {
-				setState(IWorkflowState.Error);
+				setErrorState('Error uploading video.');
 			} else {
 				setState(IWorkflowState.Done);
 			}
 		};
-		uploadFile().catch(() => setState(IWorkflowState.Error));
+		uploadFile().catch(exception => setErrorState(exception.toString()));
+	};
+
+	const startCamera = () => {
+		const startPreferredCamera = async () => {
+			const startedCamera = await startPreferredCameraAsync();
+			if (startedCamera) {
+				setState(IWorkflowState.CameraStarted);
+			} else {
+				setErrorState(
+					'Could not start camera.' +
+						(cameraLogs.length
+							? `Errors: ${cameraLogs.join(' ----- ')}`
+							: '')
+				);
+			}
+		};
+		startPreferredCamera().catch(exception =>
+			setErrorState(exception.toString())
+		);
+	};
+
+	const stopCamera = () => {
+		const tracks = mediaStream.getTracks();
+		for (let i = 0; i < tracks.length; i++) {
+			tracks[i].stop();
+		}
+	};
+
+	useEffect(() => {
+		switch (state) {
+			case IWorkflowState.Uploading:
+				uploadVideo();
+				break;
+			case IWorkflowState.CameraStarting:
+				startCamera();
+				break;
+			case IWorkflowState.Done:
+				stopCamera();
+				break;
+		}
 	}, [state]);
 
 	const handleStartCameraClicked = () => {
@@ -187,11 +220,17 @@ export default function VideoUpload() {
 	});
 
 	const handleRecordingDone = () => {
-		mediaRecorder.stop();
+		if (mediaRecorder.state === 'recording') {
+			mediaRecorder.stop();
+		}
 	};
 
 	const handleAcceptRecordingClicked = () => {
 		setState(IWorkflowState.Uploading);
+	};
+
+	const handleFinishRecordingClicked = () => {
+		handleRecordingDone();
 	};
 
 	return (
@@ -226,9 +265,13 @@ export default function VideoUpload() {
 						</button>
 					</>
 				)}
+				{state === IWorkflowState.Recording && (
+					<button onClick={handleFinishRecordingClicked}>
+						Finish Recording
+					</button>
+				)}
 				{(state === IWorkflowState.CameraStarting ||
-					state === IWorkflowState.CountdownToRecording ||
-					state === IWorkflowState.Recording) && (
+					state === IWorkflowState.CountdownToRecording) && (
 					<button className={styles.placeholderButton}>
 						Placeholder
 					</button>
@@ -279,7 +322,10 @@ export default function VideoUpload() {
 				<div>Thanks! Your video has been uploaded.</div>
 			)}
 			{state === IWorkflowState.Error && (
-				<div>Uh Oh! Something went wrong.</div>
+				<>
+					<div>Uh Oh! Something went wrong.</div>
+					<div>{error}</div>
+				</>
 			)}
 		</div>
 	);
