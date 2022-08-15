@@ -225,7 +225,7 @@ export default function VideoUpload() {
 		}
 	};
 
-	const handleAcceptRecordingClicked = () => {
+	const handleUploadRecordingClicked = () => {
 		setState(IWorkflowState.Uploading);
 	};
 
@@ -255,10 +255,10 @@ export default function VideoUpload() {
 							Re-do Recording
 						</button>
 						<button
-							onClick={handleAcceptRecordingClicked}
+							onClick={handleUploadRecordingClicked}
 							disabled={state === IWorkflowState.Uploading}>
 							{state === IWorkflowState.Recorded ? (
-								<>Accept Recording</>
+								<>Upload Video</>
 							) : (
 								<>Uploading...</>
 							)}
